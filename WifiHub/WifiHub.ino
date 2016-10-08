@@ -16,14 +16,24 @@
  * took.
  */
 
+#include <printf.h>
 #include <SoftReset.h>
-#include <SPI.h>
-#include "nRF24L01.h"
-#include "RF24.h"
-#include "printf.h"
+#include <RF24.h>
+#include <ESP8266.h>
 
-#include <stdio.h>
-#include "ESP8266.h"
+#define DEBUG
+
+#ifdef DEBUG
+#define DEBUG_SERIAL(x) Serial.begin(x)
+#define DEBUG_PRINT(x) Serial.print(x)
+#define DEBUG_PRINTLN(x) Serial.println(x)
+#else
+#define DEBUG_SERIAL(x)
+#define DEBUG_PRINT(x) 
+#define DEBUG_PRINTLN(x) 
+#endif
+
+
 
 #define SSID        "potocni22"//"smartphone"
 #define PASSWORD    "ca229683"//"letmeinplease"
@@ -60,8 +70,8 @@ const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
 
 void setup(void)
 {
-  Serial.begin(57600);
-  Serial.println("Setup start");
+  DEBUG_SERIAL(57600);
+  DEBUG_PRINTLN("Setup start");
   printf_begin();  
 
   if (!SetupWifi())
@@ -75,12 +85,12 @@ void setup(void)
 
 
   digitalWrite(STATUS_LED_PIN, LOW);
-  Serial.println("Loop start");
+  DEBUG_PRINTLN("Loop start");
 }
 
 void InitializeNRF24()
 {
-  Serial.println("Initialize NRF24 start");
+  DEBUG_PRINTLN("Initialize NRF24 start");
   radio.begin();
   radio.setPayloadSize(12);
   radio.setPALevel( RF24_PA_MAX ) ;     // Max power 
@@ -91,40 +101,40 @@ void InitializeNRF24()
   radio.openReadingPipe(1,pipes[0]);
   radio.printDetails();
   radio.startListening();
-  Serial.println("Initialize NRF24 end");
+  DEBUG_PRINTLN("Initialize NRF24 end");
 }
 
 bool SetupWifi()
 {
-    Serial.print("WiFi Setup begin\r\n");
+    DEBUG_PRINT("WiFi Setup begin\r\n");
     
     delay(2000);    // Delay for WiFI module start up
 
     if (wifi.setOprToStationSoftAP()) {
-        Serial.print("to station + softap ok\r\n");
+        DEBUG_PRINT("to station + softap ok\r\n");
     } else {
-        Serial.print("to station + softap err\r\n");
+        DEBUG_PRINT("to station + softap err\r\n");
         return false;
     }
 
     if (wifi.joinAP(SSID, PASSWORD)) {
-        Serial.print("Join AP success\r\n");
+        DEBUG_PRINT("Join AP success\r\n");
 
-        Serial.print("IP:");
-        Serial.println( wifi.getLocalIP().c_str());       
+        DEBUG_PRINT("IP:");
+        DEBUG_PRINTLN( wifi.getLocalIP().c_str());       
     } else {
-        Serial.print("Join AP failure\r\n");
+        DEBUG_PRINT("Join AP failure\r\n");
         return false;
     }
     
     if (wifi.disableMUX()) {
-        Serial.print("single ok\r\n");
+        DEBUG_PRINT("single ok\r\n");
     } else {
-        Serial.print("single err\r\n");
+        DEBUG_PRINT("single err\r\n");
         return false;
     }
     
-    Serial.print("WiFi Setup end\r\n");
+    DEBUG_PRINT("WiFi Setup end\r\n");
     return true;
 }
 
@@ -166,10 +176,10 @@ void updateThingSpeak(String data)
 
   if (wifi.createTCP(HOST_NAME, HOST_PORT)) 
   {
-    //Serial.print("create tcp ok\r\n");
+    //DEBUG_PRINT("create tcp ok\r\n");
   } else 
   {
-    Serial.print("create tcp err\r\n");
+    DEBUG_PRINT("create tcp err\r\n");
     restart();
   }
 
@@ -185,17 +195,17 @@ void updateThingSpeak(String data)
 
   uint32_t len = wifi.recv(buffer, sizeof(buffer), 10000);
   if (len > 0) {
-    Serial.print("WiFi received \"");
+    DEBUG_PRINT("WiFi received \"");
     for (uint32_t i = 0; i < len; i++) {
-      Serial.print((char)buffer[i]);
+      DEBUG_PRINT((char)buffer[i]);
     }
-    Serial.println("\"");
+    DEBUG_PRINTLN("\"");
   }
 }
 
 void restart()
 {
-  Serial.println("Restarting in 10s");
+  DEBUG_PRINTLN("Restarting in 10s");
   delay(10000);
   asm volatile ("  jmp 0");  
 }
